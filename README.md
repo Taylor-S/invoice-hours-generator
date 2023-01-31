@@ -1,4 +1,6 @@
 # InvoiceHoursGenerator
+This is a tool I use to help with invoicing. It takes a csv with captured job durations from a trello timer app which
+is in a format of Xh ym (2h 40m). This app converts this into decimal hours. 2.667.
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 14.1.2.
 
