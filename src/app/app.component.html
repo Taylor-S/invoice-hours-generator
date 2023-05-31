@@ -19,16 +19,19 @@
     <tr>
       <th>Card Name</th>
       <th>Decimal Hours</th>
+      <th>Cost Hours</th>
     </tr>
   </thead>
   <tbody>
     <tr *ngFor="let job of jobData | keyvalue">
       <td>{{ job.key }}</td>
       <td>{{ job.value }}</td>
+      <td>{{ job.value * 55 }}</td>
     </tr>
     <tr>
       <td>Total</td>
       <td>{{ totalDecimalHours }}</td>
+      <td>{{ totalHoursCost }}</td>
     </tr>
   </tbody>
 </table>

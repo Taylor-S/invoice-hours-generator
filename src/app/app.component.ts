@@ -13,6 +13,7 @@ export class AppComponent {
   csvData: string[][] = [];
   dragOver = false;
   jobData: Record<string, number> = {};
+  totalHoursCost = 0;
   totalDecimalHours = 0;
   trelloTotalDecimalHours = '0'; // Copy and paste the total time from trello to compare and ensure correctness.
 
@@ -108,6 +109,12 @@ export class AppComponent {
     totalRow[this.csvHeaders.length - 1] = this.getTotalDecimalHours().toString();
     totalRow[0] = 'Total';
     this.csvData.push(totalRow);
+
+    this.calcTotalHoursCost();
+  }
+
+  private calcTotalHoursCost() {
+    this.totalHoursCost = this.totalDecimalHours * 55;
   }
 
   private aggregateDecimalHoursPerCard(): void {
