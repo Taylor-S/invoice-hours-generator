@@ -120,7 +120,7 @@ export class AppComponent {
   private aggregateDecimalHoursPerCard(): void {
     const aggregatedData: Record<string, number> = {};
     this.csvData.forEach((row) => {
-      const cardName = row[4];
+      const cardName = row[6];
       const decimalHours = row[row.length - 1];
       if (!aggregatedData[cardName]) {
         aggregatedData[cardName] = 0;
