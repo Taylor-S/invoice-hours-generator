@@ -14,8 +14,43 @@ export class AppComponent {
   dragOver = false;
   jobData: Record<string, number> = {};
   totalHoursCost = 0;
+  totalHoursCostExcludingGST = 0;
   totalDecimalHours = 0;
   trelloTotalDecimalHours = '0'; // Copy and paste the total time from trello to compare and ensure correctness.
+
+  // This is including 10% GST
+  rate = 77;
+
+  get rateExcludingGST(): number {
+    return Math.round(this.rate / 1.1);
+  }
+
+  // I'm holding back 32.5% for tax - This should more than cover it.
+  percentTaxWithheld = 0.35;
+
+  clickedJobs: { [key: string]: boolean } = {};
+  private jobArray: {
+    key: string;
+    value: number;
+  }[] = [
+  ];
+
+  getAmountAfterTax(amount: number): number {
+    return amount * (1 - this.percentTaxWithheld);
+  }
+
+  copyToClipboard(value: string, updateRow: boolean = false): void {
+    navigator.clipboard.writeText(value).then(() => {
+      console.log('Copied to clipboard successfully!');
+
+      if (updateRow) {
+      // Set the clicked job to true I color the row green
+      this.clickedJobs[value] = true;
+      }
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  }
 
   dragOverHandler(event: DragEvent) {
     event.preventDefault();
@@ -69,6 +104,14 @@ export class AppComponent {
     }
   }
 
+  reCalc() {
+    this.calcTotalHoursCost();
+  }
+
+
+  createJobsArray() {
+    this.jobArray = Object.entries(this.jobData).map(([key, value]) => ({ key, value }));
+  }
 
   private convertTimeToDecimal(time: string) {
     const timeArray = time.split(' ');
@@ -114,7 +157,8 @@ export class AppComponent {
   }
 
   private calcTotalHoursCost() {
-    this.totalHoursCost = this.totalDecimalHours * 55;
+    this.totalHoursCost = this.totalDecimalHours * this.rate;
+    this.totalHoursCostExcludingGST = this.totalDecimalHours * this.rateExcludingGST;
   }
 
   private aggregateDecimalHoursPerCard(): void {

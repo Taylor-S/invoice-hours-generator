@@ -32,3 +32,21 @@ td {
 th {
     background-color: #dddddd;
 }
+
+.clicked-row {
+    background-color: #00ff55;
+  }
+
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .icon-button i {
+    font-size: 1.2em;
+    color: #000;
+  }

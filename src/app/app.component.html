@@ -8,6 +8,17 @@
   <input type="file" #fileInput (change)="uploadFile($event)" style="display: none;" accept=".csv" />
 </div>
 
+<div>
+  <label>Rate Inc GST</label><br>
+  <input type="number" [(ngModel)]="rate" (change)="reCalc()">
+  <br>
+  <label>Rate Exc GST</label><br>
+  <span>${{ rateExcludingGST }}</span>
+  <br>
+  <label>Tax Rate</label><br>
+  <span>{{ percentTaxWithheld * 100 }}%</span>
+</div>
+
 <p>Compare total from trello board (Xh Ym format)</p>
 <input #trelloTime type="text" placeholder="2h 40m">
 <button (click)="convertTrelloTime(trelloTime.value)">Convert Trello Time</button>
@@ -20,21 +31,37 @@
       <th>No.</th>
       <th>Card Name</th>
       <th>Decimal Hours</th>
-      <th>Cost Hours</th>
+      <th>Cost Hours Inc. GST</th>
+      <th>Cost Hours Exc. GST</th>
+      <th>After Tax</th>
     </tr>
   </thead>
   <tbody>
-    <tr *ngFor="let job of jobData | keyvalue; let i = index">
+    <tr *ngFor="let job of jobData | keyvalue; let i = index" [ngClass]="{'clicked-row': clickedJobs[job.key]}">
       <td>{{ i + 1 }}</td>
-      <td>{{ job.key }}</td>
-      <td>{{ job.value }}</td>
-      <td>{{ job.value * 55 }}</td>
+      <td>
+        <button (click)="copyToClipboard(job.key, true)" class="icon-button">
+          <i class="fas fa-copy"></i>
+        </button>
+        {{ job.key }}
+      </td>
+      <td>
+        <button (click)="copyToClipboard(job.value.toString())" class="icon-button">
+          <i class="fas fa-copy"></i>
+        </button>
+        {{ job.value }}
+      </td>
+      <td>{{ (job.value * rate).toFixed(2) }}</td>
+      <td>{{ (job.value * rateExcludingGST).toFixed(2) }}</td>
+      <td>{{ getAmountAfterTax(job.value * rateExcludingGST).toFixed(2) }}</td>
     </tr>
     <tr>
       <td></td>
       <td>Total</td>
       <td>{{ totalDecimalHours }}</td>
-      <td>{{ totalHoursCost }}</td>
+      <td>{{ totalHoursCost.toFixed(2) }}</td>
+      <td>{{ totalHoursCostExcludingGST.toFixed(2) }}</td>
+      <td>{{ getAmountAfterTax(totalHoursCostExcludingGST).toFixed(2) }}</td>
     </tr>
   </tbody>
 </table>
