@@ -29,6 +29,13 @@ export class AppComponent {
   percentTaxWithheld = 0.35;
 
   clickedJobs: { [key: string]: boolean } = {};
+  customItems: Record<string, number> = {};
+  fixedPriceItems: Record<string, number> = {};
+  newCustomItemName = '';
+  newCustomItemHours = 0;
+  newFixedPriceItemName = '';
+  newFixedPriceAmount = 0;
+  itemType: 'hourly' | 'fixed' = 'hourly';
   private jobArray: {
     key: string;
     value: number;
@@ -50,6 +57,65 @@ export class AppComponent {
     }).catch(err => {
       console.error('Failed to copy: ', err);
     });
+  }
+
+  addCustomItem(): void {
+    if (this.itemType === 'hourly') {
+      if (this.newCustomItemName.trim() && this.newCustomItemHours > 0) {
+        this.customItems[this.newCustomItemName.trim()] = this.newCustomItemHours;
+        this.newCustomItemName = '';
+        this.newCustomItemHours = 0;
+        this.updateTotals();
+      }
+    } else {
+      if (this.newFixedPriceItemName.trim() && this.newFixedPriceAmount > 0) {
+        this.fixedPriceItems[this.newFixedPriceItemName.trim()] = this.newFixedPriceAmount;
+        this.newFixedPriceItemName = '';
+        this.newFixedPriceAmount = 0;
+        this.updateTotals();
+      }
+    }
+  }
+
+  removeCustomItem(itemName: string): void {
+    delete this.customItems[itemName];
+    this.updateTotals();
+  }
+
+  removeFixedPriceItem(itemName: string): void {
+    delete this.fixedPriceItems[itemName];
+    this.updateTotals();
+  }
+
+  getAllJobData(): Record<string, number> {
+    return { ...this.jobData, ...this.customItems };
+  }
+
+  getTotalFixedPriceAmount(): number {
+    return Object.values(this.fixedPriceItems).reduce((sum, current) => sum + current, 0);
+  }
+
+  getTotalFixedPriceAmountAfterTax(): number {
+    return this.getAmountAfterTax(this.getTotalFixedPriceAmount());
+  }
+
+  getGrandTotalIncGST(): number {
+    return this.totalHoursCost + (this.getTotalFixedPriceAmount() * 1.1);
+  }
+
+  getGrandTotalExcGST(): number {
+    return this.totalHoursCostExcludingGST + this.getTotalFixedPriceAmount();
+  }
+
+  getGrandTotalAfterTax(): number {
+    return this.getAmountAfterTax(this.totalHoursCostExcludingGST) + this.getTotalFixedPriceAmountAfterTax();
+  }
+
+  private updateTotals(): void {
+    const csvTotal = Object.values(this.jobData).reduce((sum, current) => sum + current, 0);
+    const customTotal = Object.values(this.customItems).reduce((sum, current) => sum + current, 0);
+    this.totalDecimalHours = csvTotal + customTotal;
+    this.calcTotalHoursCost();
   }
 
   dragOverHandler(event: DragEvent) {
@@ -173,7 +239,7 @@ export class AppComponent {
     });
     this.jobData = aggregatedData;
 
-    this.totalDecimalHours = Object.values(this.jobData).reduce((sum, current) => sum + current, 0);
+    this.updateTotals();
 
     console.log(this.jobData);
     console.log(Object.keys(this.jobData));

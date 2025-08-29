@@ -50,3 +50,116 @@ th {
     font-size: 1.2em;
     color: #000;
   }
+
+.custom-item-form {
+  margin: 24px;
+  padding: 16px;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+
+  .item-type-selector {
+    margin-bottom: 16px;
+    
+    label {
+      display: inline-block;
+      margin-right: 20px;
+      cursor: pointer;
+      
+      input[type="radio"] {
+        margin-right: 5px;
+      }
+    }
+  }
+
+  .hourly-form, .fixed-price-form {
+    border-top: 1px solid #ddd;
+    padding-top: 16px;
+  }
+
+  div {
+    margin-bottom: 12px;
+
+    label {
+      display: inline-block;
+      width: 150px;
+      font-weight: bold;
+    }
+
+    input[type="text"], input[type="number"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 200px;
+    }
+  }
+
+  button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+  }
+}
+
+.custom-item-row {
+  background-color: #f0f8ff;
+}
+
+.fixed-price-row {
+  background-color: #fff0f5;
+}
+
+.subtotal-row {
+  background-color: #f5f5f5;
+  border-top: 2px solid #ccc;
+  font-weight: bold;
+}
+
+.total-row {
+  background-color: #e6ffe6;
+  font-weight: bold;
+  border-top: 3px solid #28a745;
+}
+
+.fixed-price-indicator {
+  background-color: #e91e63;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.remove-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+
+  &:hover {
+    background-color: #c82333;
+  }
+}
+
+.item-type {
+  background-color: #28a745;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
