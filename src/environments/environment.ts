@@ -3,7 +3,12 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  billdu: {
+    apiKey: '', // Add your Billdu API key here
+    apiSecret: '', // Add your Billdu API secret here
+    baseUrl: 'https://api.billdu.com'
+  }
 };
 
 /*

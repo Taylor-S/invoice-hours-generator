@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CsvService } from '../../services/csv.service';
 import { CalculationService } from '../../services/calculation.service';
 import { ConfigService } from '../../services/config.service';
+import { BillduApiService } from '../../services/billdu-api.service';
 import { TotalSummary, CustomItem, ParseResult } from '../../models/invoice.models';
 
 @Component({
@@ -18,11 +19,15 @@ export class InvoiceGeneratorPageComponent implements OnInit {
   clickedJobs: { [key: string]: boolean } = {};
   customItems: Record<string, number> = {};
   fixedPriceItems: Record<string, number> = {};
+  
+  isGeneratingInvoice = false;
+  generationMessage = '';
 
   constructor(
     private csvService: CsvService,
     private calculationService: CalculationService,
-    public configService: ConfigService
+    public configService: ConfigService,
+    private billduApiService: BillduApiService
   ) { }
 
   ngOnInit(): void {
@@ -142,5 +147,53 @@ export class InvoiceGeneratorPageComponent implements OnInit {
 
   reCalc() {
     this.updateTotals();
+  }
+
+  /**
+   * Generate invoice using Billdu API
+   */
+  generateInvoice(): void {
+    if (!this.totals || this.totals.grandTotalIncGST <= 0) {
+      alert('Please add some items before generating an invoice.');
+      return;
+    }
+
+    this.isGeneratingInvoice = true;
+    this.generationMessage = 'Generating invoice...';
+
+    const clientInfo = {
+      company: 'Client Company', // TODO: Add client form
+      fullname: 'Client Name',
+      email: 'client@example.com'
+    };
+
+    this.billduApiService.createDocument(
+      this.jobData,
+      this.customItems,
+      this.fixedPriceItems,
+      this.totals,
+      clientInfo
+    ).subscribe({
+      next: (response) => {
+        console.log('Invoice created successfully:', response);
+        this.generationMessage = `Invoice created successfully! ID: ${response.id}`;
+        this.isGeneratingInvoice = false;
+        
+        // Show success message for a few seconds
+        setTimeout(() => {
+          this.generationMessage = '';
+        }, 5000);
+      },
+      error: (error) => {
+        console.error('Failed to create invoice:', error);
+        this.generationMessage = `Failed to create invoice: ${error.message}`;
+        this.isGeneratingInvoice = false;
+        
+        // Show error message for a few seconds
+        setTimeout(() => {
+          this.generationMessage = '';
+        }, 5000);
+      }
+    });
   }
 }
