@@ -5,6 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 import { TotalSummary } from '../models/invoice.models';
 import { ConfigService } from './config.service';
 import { environment } from '../../environments/environment';
+import * as CryptoJS from 'crypto-js';
 
 export interface BillduDocument {
   id?: number;
@@ -35,6 +36,33 @@ export interface BillduDocument {
   client?: any;
   supplier?: any;
   items?: BillduDocumentItem[];
+}
+
+export interface BillduClient {
+  id: number;
+  company?: string;
+  fullname?: string;
+  name?: string;
+  surname?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  street?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  created?: string;
+  modified?: string;
+}
+
+export interface BillduApiListResponse<T> {
+  page: number;
+  limit: number;
+  pages: number;
+  total: number;
+  _embedded?: {
+    [key: string]: T[];
+  };
 }
 
 export interface BillduDocumentItem {
@@ -72,7 +100,8 @@ export class BillduApiService {
     customItems: Record<string, number>,
     fixedPriceItems: Record<string, number>,
     totals: TotalSummary,
-    clientInfo?: { company?: string; fullname?: string; email?: string; }
+    clientInfo?: { company?: string; fullname?: string; email?: string; },
+    clientId?: number
   ): Observable<BillduDocument> {
     // Check if API credentials are configured
     if (!this.apiKey || !this.apiSecret) {
@@ -85,7 +114,8 @@ export class BillduApiService {
       customItems, 
       fixedPriceItems, 
       totals, 
-      clientInfo
+      clientInfo,
+      clientId
     );
 
     const signature = this.generateSignature(documentData, timestamp);
@@ -105,6 +135,48 @@ export class BillduApiService {
   }
 
   /**
+   * Get all clients from Billdu
+   */
+  getClients(): Observable<BillduClient[]> {
+    // Check if API credentials are configured
+    if (!this.apiKey || !this.apiSecret) {
+      return throwError(() => new Error('Billdu API credentials not configured. Please set them in environment.ts'));
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+    const emptyData: any[] = []; // Empty array for GET request as per API documentation
+    const signature = this.generateSignature(emptyData, timestamp);
+    
+    const params = new HttpParams()
+      .set('apiKey', this.apiKey)
+      .set('signature', signature)
+      .set('timestamp', timestamp.toString());
+
+    console.log('Making GET request to:', `${this.apiBaseUrl}/clients`);
+    console.log('Request params:', {
+      apiKey: this.apiKey,
+      signature: signature,
+      timestamp: timestamp
+    });
+
+    return this.http.get<BillduApiListResponse<BillduClient>>(
+      `${this.apiBaseUrl}/clients`,
+      { params }
+    ).pipe(
+      map(response => {
+        console.log('Full API response:', response);
+        // Extract clients from the embedded response structure
+        // According to API docs, clients are in _embedded.items
+        if (response._embedded && response._embedded['items']) {
+          return response._embedded['items'];
+        }
+        return [];
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Build document payload for Billdu API
    */
   private buildDocumentPayload(
@@ -112,7 +184,8 @@ export class BillduApiService {
     customItems: Record<string, number>,
     fixedPriceItems: Record<string, number>,
     totals: TotalSummary,
-    clientInfo?: { company?: string; fullname?: string; email?: string; }
+    clientInfo?: { company?: string; fullname?: string; email?: string; },
+    clientId?: number
   ): any {
     const items: BillduDocumentItem[] = [];
 
@@ -152,44 +225,82 @@ export class BillduApiService {
       });
     });
 
-    return {
+    const documentPayload: any = {
       type: 'invoice',
       currency: 'AUD', // TODO: Make configurable
       payment: 'transfer',
       status: 'exposed',
-      issue_date: new Date().toISOString(),
+      issue_date: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
       maturity_date: 30, // 30 days payment terms
-      client: {
-        company: clientInfo?.company || 'Client Company',
-        fullname: clientInfo?.fullname || 'Client Name',
-        email: clientInfo?.email || ''
-      },
       items: items,
       note: 'Generated from Invoice Hours Generator'
     };
+
+    // Use client ID if provided (for existing clients), otherwise use client info
+    if (clientId) {
+      documentPayload.client = clientId;
+    } else if (clientInfo) {
+      documentPayload.client = {
+        company: clientInfo.company || 'Client Company',
+        fullname: clientInfo.fullname || 'Client Name',
+        email: clientInfo.email || ''
+      };
+    }
+
+    return documentPayload;
   }
 
   /**
    * Generate HMAC signature for Billdu API authentication
+   * Based on Billdu API documentation:
+   * 1. Create data object/array with timestamp and apiKey
+   * 2. Sort keys alphabetically (ksort)
+   * 3. JSON encode
+   * 4. Generate HMAC-SHA512 hash (raw bytes)
+   * 5. Base64 encode
+   * 6. URL encode
    */
   private generateSignature(data: any, timestamp: number): string {
-    const toSign: any = { ...data };
-    toSign.timestamp = timestamp;
-    toSign.apiKey = this.apiKey;
+    let toSign: any;
+    
+    // Handle both arrays (for GET) and objects (for POST)
+    if (Array.isArray(data)) {
+      // For GET requests with empty array
+      toSign = {
+        timestamp: timestamp,
+        apiKey: this.apiKey
+      };
+    } else {
+      // For POST requests with data object
+      toSign = { ...data };
+      toSign.timestamp = timestamp;
+      toSign.apiKey = this.apiKey;
+    }
 
-    // Sort object keys
+    // Sort object keys alphabetically (ksort equivalent)
     const sortedKeys = Object.keys(toSign).sort();
     const sortedData: any = {};
     sortedKeys.forEach(key => {
       sortedData[key] = toSign[key];
     });
 
+    // JSON encode the sorted data
     const json = JSON.stringify(sortedData);
     
-    // TODO: Implement proper HMAC-SHA512 signature generation
-    // For now, return a placeholder - this needs crypto library
-    console.log('JSON to sign:', json);
-    return 'placeholder_signature';
+    // Generate HMAC-SHA512 hash with the API secret (raw = true)
+    const hash = CryptoJS.HmacSHA512(json, this.apiSecret);
+    
+    // Base64 encode the raw hash
+    const base64Hash = hash.toString(CryptoJS.enc.Base64);
+    
+    // URL encode the signature
+    const signature = encodeURIComponent(base64Hash);
+    
+    console.log('Signing JSON:', json);
+    console.log('Base64 hash:', base64Hash);
+    console.log('URL encoded signature:', signature);
+    
+    return signature;
   }
 
   /**
