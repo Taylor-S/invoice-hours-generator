@@ -1,0 +1,10 @@
+<h2>Upload Timesheet</h2>
+<div class="upload-area" 
+     (click)="fileInput.click()" 
+     (drop)="dropHandler($event)" 
+     (dragover)="dragOverHandler($event)"
+     (dragleave)="dragLeaveHandler($event)"
+     [class.drag-over]="dragOver">
+  <p>Click or drag a CSV file here to upload.</p>
+  <input type="file" #fileInput (change)="uploadFile($event)" style="display: none;" accept=".csv" />
+</div>

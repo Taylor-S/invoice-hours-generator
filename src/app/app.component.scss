@@ -1,116 +1,43 @@
-.upload-area {
-    width: auto;
-    height: 200px;
-    border: 2px dashed #dddddd;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #dddddd;
-    cursor: pointer;
-    margin: 24px;
+// Main app container styles
+h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
 }
 
-.upload-area.drag-over {
-    border-color: blue;
-}
-
-
+// Table styles remain for summary and breakdown tables
 table {
-    margin: 24px;
-    width: auto;
-    border-collapse: collapse;
+  margin: 24px;
+  width: auto;
+  border-collapse: collapse;
 }
 
 th,
 td {
-    border: 1px solid #dddddd;
-    padding: 8px;
-    text-align: left;
+  border: 1px solid #dddddd;
+  padding: 8px;
+  text-align: left;
 }
 
 th {
-    background-color: #dddddd;
+  background-color: #dddddd;
 }
 
 .clicked-row {
-    background-color: #00ff55;
-  }
-
+  background-color: #00ff55;
+}
 
 .icon-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .icon-button i {
-    font-size: 1.2em;
-    color: #000;
-  }
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
 
-.custom-item-form {
-  margin: 24px;
-  padding: 16px;
-  border: 1px solid #dddddd;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-
-  .item-type-selector {
-    margin-bottom: 16px;
-    
-    label {
-      display: inline-block;
-      margin-right: 20px;
-      cursor: pointer;
-      
-      input[type="radio"] {
-        margin-right: 5px;
-      }
-    }
-  }
-
-  .hourly-form, .fixed-price-form {
-    border-top: 1px solid #ddd;
-    padding-top: 16px;
-  }
-
-  div {
-    margin-bottom: 12px;
-
-    label {
-      display: inline-block;
-      width: 150px;
-      font-weight: bold;
-    }
-
-    input[type="text"], input[type="number"] {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      width: 200px;
-    }
-  }
-
-  button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-
-    &:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-    }
-
-    &:hover:not(:disabled) {
-      background-color: #0056b3;
-    }
-  }
+.icon-button i {
+  font-size: 1.2em;
+  color: #000;
 }
 
 .custom-item-row {
@@ -162,4 +89,24 @@ th {
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 11px;
+}
+
+.tiles {
+  display: flex;
+  padding: 24px;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .tile {
+    flex: 1 1 200px;
+    width: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    padding: 20px;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+  }
 }

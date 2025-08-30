@@ -1,0 +1,98 @@
+.custom-item-form {
+//   margin: 24px;
+//   padding: 20px;
+//   border: 1px solid #dddddd;
+//   border-radius: 8px;
+//   background-color: #f9f9f9;
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  .item-type-selector {
+    margin-bottom: 20px;
+    padding: 16px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    
+    .radio-label {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 24px;
+      cursor: pointer;
+      
+      input[type="radio"] {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      span {
+        user-select: none;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .hourly-form, .fixed-price-form {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 20px;
+
+    .form-group {
+      margin-bottom: 16px;
+
+      label {
+        display: block;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 6px;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+
+        &:focus {
+          border-color: #007bff;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        &::placeholder {
+          color: #999;
+        }
+      }
+    }
+
+    .add-btn {
+      padding: 12px 24px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+
+      &:hover:not(:disabled) {
+        background-color: #0056b3;
+      }
+
+      &:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+    }
+  }
+}

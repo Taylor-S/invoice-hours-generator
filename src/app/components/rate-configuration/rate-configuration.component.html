@@ -1,0 +1,16 @@
+<div class="rate-configuration">
+  <div class="rate-input">
+    <label>Rate Inc GST</label><br>
+    <input type="number" [(ngModel)]="rate" (change)="onRateChange()" min="0" step="0.01">
+  </div>
+  
+  <div class="rate-display">
+    <label>Rate Exc GST</label><br>
+    <span class="rate-value">${{ configService.rateExcludingGST }}</span>
+  </div>
+  
+  <div class="tax-display">
+    <label>Tax Withholding Rate</label><br>
+    <span class="tax-value">{{ configService.percentTaxWithheld * 100 }}%</span>
+  </div>
+</div>

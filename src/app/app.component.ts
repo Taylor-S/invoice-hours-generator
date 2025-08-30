@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CsvService } from './services/csv.service';
 import { CalculationService } from './services/calculation.service';
 import { ConfigService } from './services/config.service';
-import { TotalSummary, CustomItem } from './models/invoice.models';
+import { TotalSummary, CustomItem, ParseResult } from './models/invoice.models';
 
 
 @Component({
@@ -14,19 +14,12 @@ export class AppComponent {
   title = 'invoice-hours-generator';
   csvHeaders: string[] = [];
   csvData: string[][] = [];
-  dragOver = false;
   jobData: Record<string, number> = {};
   totals: TotalSummary | null = null;
-  trelloTotalDecimalHours = '0'; // Copy and paste the total time from trello to compare and ensure correctness.
 
   clickedJobs: { [key: string]: boolean } = {};
   customItems: Record<string, number> = {};
   fixedPriceItems: Record<string, number> = {};
-  newCustomItemName = '';
-  newCustomItemHours = 0;
-  newFixedPriceItemName = '';
-  newFixedPriceAmount = 0;
-  itemType: 'hourly' | 'fixed' = 'hourly';
 
   constructor(
     private csvService: CsvService,
@@ -69,30 +62,38 @@ export class AppComponent {
       console.log('Copied to clipboard successfully!');
 
       if (updateRow) {
-      // Set the clicked job to true I color the row green
-      this.clickedJobs[value] = true;
+        // Set the clicked job to true I color the row green
+        this.clickedJobs[value] = true;
       }
     }).catch(err => {
       console.error('Failed to copy: ', err);
     });
   }
 
-  addCustomItem(): void {
-    if (this.itemType === 'hourly') {
-      if (this.newCustomItemName.trim() && this.newCustomItemHours > 0) {
-        this.customItems[this.newCustomItemName.trim()] = this.newCustomItemHours;
-        this.newCustomItemName = '';
-        this.newCustomItemHours = 0;
-        this.updateTotals();
-      }
-    } else {
-      if (this.newFixedPriceItemName.trim() && this.newFixedPriceAmount > 0) {
-        this.fixedPriceItems[this.newFixedPriceItemName.trim()] = this.newFixedPriceAmount;
-        this.newFixedPriceItemName = '';
-        this.newFixedPriceAmount = 0;
-        this.updateTotals();
-      }
+  // Event handlers for child components
+  onCsvProcessed(result: ParseResult): void {
+    this.csvHeaders = result.headers;
+    this.csvData = this.csvService.addTotalRowToData(result.data, result.headers);
+    this.jobData = result.jobData;
+    this.updateTotals();
+    console.log('CSV processed in AppComponent:', result);
+  }
+
+  onCsvUploadError(error: string): void {
+    alert(error);
+  }
+
+  onRateChanged(): void {
+    this.updateTotals();
+  }
+
+  onCustomItemAdded(item: CustomItem): void {
+    if (item.type === 'hourly') {
+      this.customItems[item.name] = item.value;
+    } else if (item.type === 'fixed') {
+      this.fixedPriceItems[item.name] = item.value;
     }
+    this.updateTotals();
   }
 
   removeCustomItem(itemName: string): void {
@@ -136,56 +137,6 @@ export class AppComponent {
       this.customItems,
       this.fixedPriceItems
     );
-  }
-
-  dragOverHandler(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = "copy";
-    }
-    this.dragOver = true;
-  }
-
-  dropHandler(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.dragOver = false;
-    if (event.dataTransfer) {
-      const files = event.dataTransfer.files;
-      if (files && files.length > 0) {
-        const dummyEvent = {
-          target: {
-            files
-          }
-        }
-        this.uploadFile(dummyEvent);
-      }
-    }
-  }
-
-
-  convertTrelloTime(timeString: string) {
-    this.trelloTotalDecimalHours = this.csvService.convertTimeToDecimal(timeString);
-  }
-
-
-  uploadFile(event: any): void {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    this.csvService.parseFile(file).subscribe({
-      next: (result) => {
-        this.csvHeaders = result.headers;
-        this.csvData = this.csvService.addTotalRowToData(result.data, result.headers);
-        this.jobData = result.jobData;
-        this.updateTotals();
-        console.log('CSV processed:', result);
-      },
-      error: (error) => {
-        alert(error.message);
-      }
-    });
   }
 
   reCalc() {

@@ -1,0 +1,30 @@
+<div class="trello-converter">
+  <h3>Compare total from Trello board (Xh Ym format)</h3>
+  
+  <div class="converter-input">
+    <input 
+      type="text" 
+      [(ngModel)]="trelloTimeInput"
+      placeholder="e.g., 2h 40m"
+      class="time-input">
+    
+    <button 
+      (click)="convertTrelloTime(trelloTimeInput)" 
+      class="convert-btn"
+      [disabled]="!trelloTimeInput.trim()">
+      Convert
+    </button>
+    
+    <button 
+      (click)="clearConversion()" 
+      class="clear-btn"
+      [disabled]="!trelloTimeInput && trelloTotalDecimalHours === '0'">
+      Clear
+    </button>
+  </div>
+  
+  <div class="conversion-result">
+    <label>Decimal Form:</label>
+    <span class="decimal-value">{{ trelloTotalDecimalHours }}</span>
+  </div>
+</div>

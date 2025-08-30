@@ -1,0 +1,89 @@
+.trello-converter {
+//   margin: 24px;
+//   padding: 16px;
+//   border: 1px solid #e0e0e0;
+//   border-radius: 4px;
+//   background-color: #f8f9fa;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #333;
+    font-size: 18px;
+  }
+
+  .converter-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .time-input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 146px;
+      font-size: 14px;
+
+      &:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      }
+
+      &::placeholder {
+        color: #999;
+      }
+    }
+
+    .convert-btn, .clear-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .convert-btn {
+      background-color: #007bff;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background-color: #0056b3;
+      }
+    }
+
+    .clear-btn {
+      background-color: #6c757d;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background-color: #545b62;
+      }
+    }
+  }
+
+  .conversion-result {
+    label {
+      font-weight: bold;
+      color: #333;
+      margin-right: 8px;
+    }
+
+    .decimal-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #28a745;
+      background-color: #d4edda;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+  }
+}

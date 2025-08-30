@@ -1,64 +1,25 @@
 <h1>Invoice Hours Generator</h1>
 
-
-<h2>Upload Timesheet</h2>
-<div class="upload-area" (click)="fileInput.click()" (drop)="dropHandler($event)" (dragover)="dragOverHandler($event)"
-  [class.drag-over]="dragOver">
-  <p>Click or drag a CSV file here to upload.</p>
-  <input type="file" #fileInput (change)="uploadFile($event)" style="display: none;" accept=".csv" />
-</div>
-
-<div>
-  <label>Rate Inc GST</label><br>
-  <input type="number" [(ngModel)]="rate" (change)="reCalc()">
-  <br>
-  <label>Rate Exc GST</label><br>
-  <span>${{ rateExcludingGST }}</span>
-  <br>
-  <label>Tax Rate</label><br>
-  <span>{{ configService.percentTaxWithheld * 100 }}%</span>
-</div>
-
-<p>Compare total from trello board (Xh Ym format)</p>
-<input #trelloTime type="text" placeholder="2h 40m">
-<button (click)="convertTrelloTime(trelloTime.value)">Convert Trello Time</button>
-<p>Decimal Form: {{ trelloTotalDecimalHours }}</p>
-
-<h2>Add Custom Item</h2>
-<div class="custom-item-form">
-  <div class="item-type-selector">
-    <label>
-      <input type="radio" name="itemType" value="hourly" [(ngModel)]="itemType"> 
-      Hourly Item
-    </label>
-    <label>
-      <input type="radio" name="itemType" value="fixed" [(ngModel)]="itemType"> 
-      Fixed Price Item
-    </label>
+<!-- CSV Upload Component -->
+<app-csv-upload
+  (csvProcessed)="onCsvProcessed($event)"
+  (uploadError)="onCsvUploadError($event)"
+>
+</app-csv-upload>
+<div class="tiles">
+  <div class="tile">
+    <!-- Rate Configuration Component -->
+    <app-rate-configuration (rateChanged)="onRateChanged()">
+    </app-rate-configuration>
   </div>
-
-  <div *ngIf="itemType === 'hourly'" class="hourly-form">
-    <div>
-      <label>Item Name:</label>
-      <input type="text" [(ngModel)]="newCustomItemName" placeholder="Enter item name">
-    </div>
-    <div>
-      <label>Hours:</label>
-      <input type="number" [(ngModel)]="newCustomItemHours" step="0.001" min="0" placeholder="0.000">
-    </div>
-    <button (click)="addCustomItem()" [disabled]="!newCustomItemName.trim() || newCustomItemHours <= 0">Add Hourly Item</button>
+  <div class="tile">
+    <!-- Trello Converter Component -->
+    <app-trello-converter></app-trello-converter>
   </div>
-
-  <div *ngIf="itemType === 'fixed'" class="fixed-price-form">
-    <div>
-      <label>Item Name:</label>
-      <input type="text" [(ngModel)]="newFixedPriceItemName" placeholder="e.g., Off-site service fee">
-    </div>
-    <div>
-      <label>Amount (Exc. GST):</label>
-      <input type="number" [(ngModel)]="newFixedPriceAmount" step="0.01" min="0" placeholder="0.00">
-    </div>
-    <button (click)="addCustomItem()" [disabled]="!newFixedPriceItemName.trim() || newFixedPriceAmount <= 0">Add Fixed Price Item</button>
+  <div class="tile">
+    <!-- Custom Item Form Component -->
+    <app-custom-item-form (itemAdded)="onCustomItemAdded($event)">
+    </app-custom-item-form>
   </div>
 </div>
 
@@ -77,7 +38,10 @@
   </thead>
   <tbody>
     <!-- CSV Data -->
-    <tr *ngFor="let job of jobData | keyvalue; let i = index" [ngClass]="{'clicked-row': clickedJobs[job.key]}">
+    <tr
+      *ngFor="let job of jobData | keyvalue; let i = index"
+      [ngClass]="{ 'clicked-row': clickedJobs[job.key] }"
+    >
       <td>{{ i + 1 }}</td>
       <td>
         <button (click)="copyToClipboard(job.key, true)" class="icon-button">
@@ -86,7 +50,10 @@
         {{ job.key }}
       </td>
       <td>
-        <button (click)="copyToClipboard(job.value.toString())" class="icon-button">
+        <button
+          (click)="copyToClipboard(job.value.toString())"
+          class="icon-button"
+        >
           <i class="fas fa-copy"></i>
         </button>
         {{ job.value.toFixed(3) }}
@@ -99,34 +66,58 @@
       </td>
     </tr>
     <!-- Custom Items -->
-    <tr *ngFor="let customItem of customItems | keyvalue; let i = index" class="custom-item-row">
+    <tr
+      *ngFor="let customItem of customItems | keyvalue; let i = index"
+      class="custom-item-row"
+    >
       <td>{{ (jobData | keyvalue).length + i + 1 }}</td>
       <td>
-        <button (click)="copyToClipboard(customItem.key, true)" class="icon-button">
+        <button
+          (click)="copyToClipboard(customItem.key, true)"
+          class="icon-button"
+        >
           <i class="fas fa-copy"></i>
         </button>
         {{ customItem.key }}
       </td>
       <td>
-        <button (click)="copyToClipboard(customItem.value.toString())" class="icon-button">
+        <button
+          (click)="copyToClipboard(customItem.value.toString())"
+          class="icon-button"
+        >
           <i class="fas fa-copy"></i>
         </button>
         {{ customItem.value.toFixed(3) }}
       </td>
       <td>{{ (customItem.value * rate).toFixed(2) }}</td>
       <td>{{ (customItem.value * rateExcludingGST).toFixed(2) }}</td>
-      <td>{{ getAmountAfterTax(customItem.value * rateExcludingGST).toFixed(2) }}</td>
       <td>
-        <button (click)="removeCustomItem(customItem.key)" class="remove-button">
+        {{ getAmountAfterTax(customItem.value * rateExcludingGST).toFixed(2) }}
+      </td>
+      <td>
+        <button
+          (click)="removeCustomItem(customItem.key)"
+          class="remove-button"
+        >
           <i class="fas fa-trash"></i> Remove
         </button>
       </td>
     </tr>
     <!-- Fixed Price Items -->
-    <tr *ngFor="let fixedItem of fixedPriceItems | keyvalue; let i = index" class="fixed-price-row">
-      <td>{{ (jobData | keyvalue).length + (customItems | keyvalue).length + i + 1 }}</td>
+    <tr
+      *ngFor="let fixedItem of fixedPriceItems | keyvalue; let i = index"
+      class="fixed-price-row"
+    >
       <td>
-        <button (click)="copyToClipboard(fixedItem.key, true)" class="icon-button">
+        {{
+          (jobData | keyvalue).length + (customItems | keyvalue).length + i + 1
+        }}
+      </td>
+      <td>
+        <button
+          (click)="copyToClipboard(fixedItem.key, true)"
+          class="icon-button"
+        >
           <i class="fas fa-copy"></i>
         </button>
         {{ fixedItem.key }}
@@ -138,7 +129,10 @@
       <td>{{ fixedItem.value.toFixed(2) }}</td>
       <td>{{ getAmountAfterTax(fixedItem.value).toFixed(2) }}</td>
       <td>
-        <button (click)="removeFixedPriceItem(fixedItem.key)" class="remove-button">
+        <button
+          (click)="removeFixedPriceItem(fixedItem.key)"
+          class="remove-button"
+        >
           <i class="fas fa-trash"></i> Remove
         </button>
       </td>
@@ -147,10 +141,20 @@
     <tr class="subtotal-row" *ngIf="(fixedPriceItems | keyvalue).length > 0">
       <td></td>
       <td><strong>Hours Subtotal</strong></td>
-      <td><strong>{{ totalDecimalHours.toFixed(3) }}</strong></td>
-      <td><strong>{{ totalHoursCost.toFixed(2) }}</strong></td>
-      <td><strong>{{ totalHoursCostExcludingGST.toFixed(2) }}</strong></td>
-      <td><strong>{{ getAmountAfterTax(totalHoursCostExcludingGST).toFixed(2) }}</strong></td>
+      <td>
+        <strong>{{ totalDecimalHours.toFixed(3) }}</strong>
+      </td>
+      <td>
+        <strong>{{ totalHoursCost.toFixed(2) }}</strong>
+      </td>
+      <td>
+        <strong>{{ totalHoursCostExcludingGST.toFixed(2) }}</strong>
+      </td>
+      <td>
+        <strong>{{
+          getAmountAfterTax(totalHoursCostExcludingGST).toFixed(2)
+        }}</strong>
+      </td>
       <td></td>
     </tr>
     <!-- Fixed Price Subtotal Row -->
@@ -158,38 +162,53 @@
       <td></td>
       <td><strong>Fixed Price Subtotal</strong></td>
       <td><strong>-</strong></td>
-      <td><strong>{{ getTotalFixedPriceAmount().toFixed(2) }}</strong></td>
-      <td><strong>{{ (totals?.fixedPriceTotalExcGST || 0).toFixed(2) }}</strong></td>
-      <td><strong>{{ getTotalFixedPriceAmountAfterTax().toFixed(2) }}</strong></td>
+      <td>
+        <strong>{{ getTotalFixedPriceAmount().toFixed(2) }}</strong>
+      </td>
+      <td>
+        <strong>{{ (totals?.fixedPriceTotalExcGST || 0).toFixed(2) }}</strong>
+      </td>
+      <td>
+        <strong>{{ getTotalFixedPriceAmountAfterTax().toFixed(2) }}</strong>
+      </td>
       <td></td>
     </tr>
     <!-- Grand Total Row -->
     <tr class="total-row">
       <td></td>
-      <td><strong>{{ (fixedPriceItems | keyvalue).length > 0 ? 'Grand Total' : 'Total' }}</strong></td>
-      <td><strong>{{ totalDecimalHours.toFixed(3) }}</strong></td>
-      <td><strong>{{ getGrandTotalIncGST().toFixed(2) }}</strong></td>
-      <td><strong>{{ getGrandTotalExcGST().toFixed(2) }}</strong></td>
-      <td><strong>{{ getGrandTotalAfterTax().toFixed(2) }}</strong></td>
+      <td>
+        <strong>{{
+          (fixedPriceItems | keyvalue).length > 0 ? "Grand Total" : "Total"
+        }}</strong>
+      </td>
+      <td>
+        <strong>{{ totalDecimalHours.toFixed(3) }}</strong>
+      </td>
+      <td>
+        <strong>{{ getGrandTotalIncGST().toFixed(2) }}</strong>
+      </td>
+      <td>
+        <strong>{{ getGrandTotalExcGST().toFixed(2) }}</strong>
+      </td>
+      <td>
+        <strong>{{ getGrandTotalAfterTax().toFixed(2) }}</strong>
+      </td>
       <td></td>
     </tr>
   </tbody>
 </table>
 
-
-
-
 <h2>Breakdown</h2>
 <table class="fullbreakdown">
   <thead>
     <tr>
-      <th *ngFor="let header of csvHeaders">{{header}}</th>
+      <th *ngFor="let header of csvHeaders">{{ header }}</th>
     </tr>
   </thead>
   <tbody>
     <tr *ngFor="let row of csvData">
       <!-- <td>{{row}}</td> -->
-      <td *ngFor="let cell of row">{{cell}}</td>
+      <td *ngFor="let cell of row">{{ cell }}</td>
     </tr>
   </tbody>
 </table>

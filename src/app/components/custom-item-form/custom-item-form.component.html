@@ -1,0 +1,68 @@
+<div class="custom-item-form">
+  <h2>Add Custom Item</h2>
+  
+  <div class="item-type-selector">
+    <label class="radio-label">
+      <input type="radio" name="itemType" value="hourly" [(ngModel)]="itemType"> 
+      <span>Hourly Item</span>
+    </label>
+    <label class="radio-label">
+      <input type="radio" name="itemType" value="fixed" [(ngModel)]="itemType"> 
+      <span>Fixed Price Item</span>
+    </label>
+  </div>
+
+  <div *ngIf="itemType === 'hourly'" class="hourly-form">
+    <div class="form-group">
+      <label>Item Name:</label>
+      <input 
+        type="text" 
+        [(ngModel)]="newCustomItemName" 
+        placeholder="e.g., Additional consultation"
+        class="form-input">
+    </div>
+    <div class="form-group">
+      <label>Hours:</label>
+      <input 
+        type="number" 
+        [(ngModel)]="newCustomItemHours" 
+        step="0.001" 
+        min="0" 
+        placeholder="0.000"
+        class="form-input">
+    </div>
+    <button 
+      (click)="addCustomItem()" 
+      [disabled]="isAddButtonDisabled" 
+      class="add-btn">
+      Add Hourly Item
+    </button>
+  </div>
+
+  <div *ngIf="itemType === 'fixed'" class="fixed-price-form">
+    <div class="form-group">
+      <label>Item Name:</label>
+      <input 
+        type="text" 
+        [(ngModel)]="newFixedPriceItemName" 
+        placeholder="e.g., Off-site service fee"
+        class="form-input">
+    </div>
+    <div class="form-group">
+      <label>Amount (Exc. GST):</label>
+      <input 
+        type="number" 
+        [(ngModel)]="newFixedPriceAmount" 
+        step="0.01" 
+        min="0" 
+        placeholder="0.00"
+        class="form-input">
+    </div>
+    <button 
+      (click)="addCustomItem()" 
+      [disabled]="isAddButtonDisabled" 
+      class="add-btn">
+      Add Fixed Price Item
+    </button>
+  </div>
+</div>
