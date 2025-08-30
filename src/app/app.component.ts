@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
-import * as Papa from 'papaparse';
+import { CsvService } from './services/csv.service';
+import { CalculationService } from './services/calculation.service';
+import { ConfigService } from './services/config.service';
+import { TotalSummary, CustomItem } from './models/invoice.models';
 
 
 @Component({
@@ -13,20 +16,8 @@ export class AppComponent {
   csvData: string[][] = [];
   dragOver = false;
   jobData: Record<string, number> = {};
-  totalHoursCost = 0;
-  totalHoursCostExcludingGST = 0;
-  totalDecimalHours = 0;
+  totals: TotalSummary | null = null;
   trelloTotalDecimalHours = '0'; // Copy and paste the total time from trello to compare and ensure correctness.
-
-  // This is including 10% GST
-  rate = 77;
-
-  get rateExcludingGST(): number {
-    return Math.round(this.rate / 1.1);
-  }
-
-  // I'm holding back 32.5% for tax - This should more than cover it.
-  percentTaxWithheld = 0.35;
 
   clickedJobs: { [key: string]: boolean } = {};
   customItems: Record<string, number> = {};
@@ -36,14 +27,41 @@ export class AppComponent {
   newFixedPriceItemName = '';
   newFixedPriceAmount = 0;
   itemType: 'hourly' | 'fixed' = 'hourly';
-  private jobArray: {
-    key: string;
-    value: number;
-  }[] = [
-  ];
+
+  constructor(
+    private csvService: CsvService,
+    private calculationService: CalculationService,
+    public configService: ConfigService
+  ) {}
+
+  // Computed properties using the services
+  get rate(): number {
+    return this.configService.rate;
+  }
+
+  set rate(value: number) {
+    this.configService.updateRate(value);
+    this.updateTotals();
+  }
+
+  get rateExcludingGST(): number {
+    return this.configService.rateExcludingGST;
+  }
+
+  get totalDecimalHours(): number {
+    return this.totals?.totalHours || 0;
+  }
+
+  get totalHoursCost(): number {
+    return this.totals?.totalIncGST || 0;
+  }
+
+  get totalHoursCostExcludingGST(): number {
+    return this.totals?.totalExcGST || 0;
+  }
 
   getAmountAfterTax(amount: number): number {
-    return amount * (1 - this.percentTaxWithheld);
+    return this.calculationService.calculateAfterTax(amount);
   }
 
   copyToClipboard(value: string, updateRow: boolean = false): void {
@@ -92,30 +110,32 @@ export class AppComponent {
   }
 
   getTotalFixedPriceAmount(): number {
-    return Object.values(this.fixedPriceItems).reduce((sum, current) => sum + current, 0);
+    return this.totals?.fixedPriceTotal || 0;
   }
 
   getTotalFixedPriceAmountAfterTax(): number {
-    return this.getAmountAfterTax(this.getTotalFixedPriceAmount());
+    const excGST = this.totals?.fixedPriceTotalExcGST || 0;
+    return this.calculationService.calculateAfterTax(excGST);
   }
 
   getGrandTotalIncGST(): number {
-    return this.totalHoursCost + (this.getTotalFixedPriceAmount() * 1.1);
+    return this.totals?.grandTotalIncGST || 0;
   }
 
   getGrandTotalExcGST(): number {
-    return this.totalHoursCostExcludingGST + this.getTotalFixedPriceAmount();
+    return this.totals?.grandTotalExcGST || 0;
   }
 
   getGrandTotalAfterTax(): number {
-    return this.getAmountAfterTax(this.totalHoursCostExcludingGST) + this.getTotalFixedPriceAmountAfterTax();
+    return this.totals?.grandTotalAfterTax || 0;
   }
 
   private updateTotals(): void {
-    const csvTotal = Object.values(this.jobData).reduce((sum, current) => sum + current, 0);
-    const customTotal = Object.values(this.customItems).reduce((sum, current) => sum + current, 0);
-    this.totalDecimalHours = csvTotal + customTotal;
-    this.calcTotalHoursCost();
+    this.totals = this.calculationService.calculateTotals(
+      this.jobData,
+      this.customItems,
+      this.fixedPriceItems
+    );
   }
 
   dragOverHandler(event: DragEvent) {
@@ -146,103 +166,30 @@ export class AppComponent {
 
 
   convertTrelloTime(timeString: string) {
-    this.trelloTotalDecimalHours = this.convertTimeToDecimal(timeString);
+    this.trelloTotalDecimalHours = this.csvService.convertTimeToDecimal(timeString);
   }
 
 
   uploadFile(event: any): void {
     const file = event.target.files[0];
-    if (file.type === "text/csv" || file.name.endsWith(".csv")) {
-      Papa.parse(file, {
-        header: true,
-        complete: (results: Papa.ParseResult<unknown>) => {
-          this.csvHeaders = results.meta.fields as string[];
-          this.csvData = results.data.map(row => this.processRow(row));
-          this.csvHeaders.splice(this.csvHeaders.length, 0, 'Decimal Hours');
-          this.aggregateDecimalHoursPerCard()
-          this.addTotalRow();
-          console.log(this.csvData);
-        }
-      });
-    } else {
-      // Show an error message or alert
-      alert("Invalid file type. Please upload a CSV file.");
-    }
+    if (!file) return;
+
+    this.csvService.parseFile(file).subscribe({
+      next: (result) => {
+        this.csvHeaders = result.headers;
+        this.csvData = this.csvService.addTotalRowToData(result.data, result.headers);
+        this.jobData = result.jobData;
+        this.updateTotals();
+        console.log('CSV processed:', result);
+      },
+      error: (error) => {
+        alert(error.message);
+      }
+    });
   }
 
   reCalc() {
-    this.calcTotalHoursCost();
-  }
-
-
-  createJobsArray() {
-    this.jobArray = Object.entries(this.jobData).map(([key, value]) => ({ key, value }));
-  }
-
-  private convertTimeToDecimal(time: string) {
-    const timeArray = time.split(' ');
-    let hours = 0;
-    let minutes = 0;
-    for (let i = 0; i < timeArray.length; i++) {
-      if (timeArray[i].endsWith('h')) {
-        hours = parseInt(timeArray[i].substring(0, timeArray[i].length - 1));
-      } else if (timeArray[i].endsWith('m')) {
-        minutes = parseInt(timeArray[i].substring(0, timeArray[i].length - 1));
-      }
-    }
-    return (hours + minutes / 60).toFixed(3);
-  }
-
-  private processRow(row: any): string[] {
-    const values = Object.values(row);
-    let decimalHours: string = '';
-    for (let i = 0; i < values.length; i++) {
-      if (i === 1) {
-        decimalHours = this.convertTimeToDecimal(values[i] as string);
-      }
-    }
-    values.push(decimalHours);
-    return values as string[];
-  }
-
-  private getTotalDecimalHours(): number {
-    let totalDecimalHours = 0;
-    this.csvData.forEach(row => {
-      totalDecimalHours += parseFloat(row[row.length - 1]);
-    });
-    return totalDecimalHours;
-  }
-
-  private addTotalRow() {
-    const totalRow = new Array(this.csvHeaders.length).fill('');
-    totalRow[this.csvHeaders.length - 1] = this.getTotalDecimalHours().toString();
-    totalRow[0] = 'Total';
-    this.csvData.push(totalRow);
-
-    this.calcTotalHoursCost();
-  }
-
-  private calcTotalHoursCost() {
-    this.totalHoursCost = this.totalDecimalHours * this.rate;
-    this.totalHoursCostExcludingGST = this.totalDecimalHours * this.rateExcludingGST;
-  }
-
-  private aggregateDecimalHoursPerCard(): void {
-    const aggregatedData: Record<string, number> = {};
-    this.csvData.forEach((row) => {
-      const cardName = row[6];
-      const decimalHours = row[row.length - 1];
-      if (!aggregatedData[cardName]) {
-        aggregatedData[cardName] = 0;
-      }
-      aggregatedData[cardName] += parseFloat(decimalHours);
-    });
-    this.jobData = aggregatedData;
-
     this.updateTotals();
-
-    console.log(this.jobData);
-    console.log(Object.keys(this.jobData));
   }
 
   // ASK CHATGPT!!!
@@ -265,10 +212,6 @@ export class AppComponent {
   //     console.log(this.jobData);
   //     console.log(Object.keys(this.jobData));
   //   }
-
-
-
-
 
 
 }

@@ -16,7 +16,7 @@
   <span>${{ rateExcludingGST }}</span>
   <br>
   <label>Tax Rate</label><br>
-  <span>{{ percentTaxWithheld * 100 }}%</span>
+  <span>{{ configService.percentTaxWithheld * 100 }}%</span>
 </div>
 
 <p>Compare total from trello board (Xh Ym format)</p>
@@ -158,8 +158,8 @@
       <td></td>
       <td><strong>Fixed Price Subtotal</strong></td>
       <td><strong>-</strong></td>
-      <td><strong>{{ (getTotalFixedPriceAmount() * 1.1).toFixed(2) }}</strong></td>
       <td><strong>{{ getTotalFixedPriceAmount().toFixed(2) }}</strong></td>
+      <td><strong>{{ (totals?.fixedPriceTotalExcGST || 0).toFixed(2) }}</strong></td>
       <td><strong>{{ getTotalFixedPriceAmountAfterTax().toFixed(2) }}</strong></td>
       <td></td>
     </tr>
